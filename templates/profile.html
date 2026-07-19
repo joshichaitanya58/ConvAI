@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" class="scrollable-page">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - ConvAI</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='fevico.ico') }}" type="image/x-icon">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body data-theme="{{ current_user.theme|default('dark') }}"
+    class="scrollable-page simple-page page-profile {{ 'light' if current_user.theme == 'light' }}">
+    <div class="container">
+        <div class="page-header">
+            <a href="{{ url_for('index') }}" class="back-link">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back
+            </a>
+        </div>
+        <h1>My Profile</h1>
+
+        <div class="profile-form">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- Profile Details Form Section -->
+            <form method="POST" action="{{ url_for('profile') }}" class="form-section" enctype="multipart/form-data">
+                <h2>Profile Details</h2>
+
+                <div class="form-group avatar-upload-group">
+                    <div id="avatarPreview" class="avatar-preview" {% if current_user.avatar_url
+                        %}style="background-image: url('{{ current_user.avatar_url }}');" {% endif %}></div>
+                    <div>
+                        <label for="avatar" class="avatar-upload-label">
+                            Change Profile Picture
+                            <p style="font-size: 11.5px; color: var(--ink-400); margin-top: 4px;">PNG, JPG, GIF up to
+                                2MB</p>
+                        </label>
+                        <input type="file" id="avatar" name="avatar" accept="image/jpeg, image/png, image/gif"
+                            style="display: none;">
+                        {% if current_user.avatar_url %}
+                        <button type="submit" name="delete_avatar" formnovalidate class="submit-btn danger-btn"
+                            style="padding: 6px 12px; font-size: 12px; border-radius: 6px; margin-top: 6px; width: auto; display: inline-block;">
+                            Remove Picture
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" value="{{ current_user.username }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" value="{{ current_user.email }}" readonly
+                        style="background: var(--ink-800); cursor: not-allowed; opacity: 0.7;">
+                    <p style="font-size: 11.5px; color: var(--ink-400); margin-top: 6px;">
+                        {% if current_user.is_oauth_user %}Your email is managed by your Google account and cannot be
+                        changed here.
+                        {% else %}Email address cannot be changed. Please contact support if you need to update it.{%
+                        endif %}
+                    </p>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="update_details" class="submit-btn">Save Changes</button>
+                </div>
+            </form>
+
+            <!-- Change Password Form Section -->
+            {% if not current_user.is_oauth_user %}
+            <form method="POST" action="{{ url_for('profile') }}" class="form-section">
+                <h2>Change Password</h2>
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    <input type="password" id="current_password" name="current_password"
+                        placeholder="Enter your current password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" placeholder="Enter a new password"
+                        required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                        placeholder="Re-enter the new password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="change_password" class="submit-btn">Update Password</button>
+                </div>
+            </form>
+            {% endif %}
+
+            <!-- Appearance Settings (Premium Only) -->
+            {% if current_user.is_premium %}
+            <form method="POST" action="{{ url_for('profile') }}" class="form-section appearance-form">
+                <h2>Appearance</h2>
+                <div class="form-group">
+                    <label>Chat Font Size</label>
+                    <div class="font-size-selector">
+                        <input type="radio" id="font-small" name="font_size" value="small" {% if
+                            current_user.font_size=='small' %}checked{% endif %}>
+                        <label for="font-small">Small</label>
+
+                        <input type="radio" id="font-medium" name="font_size" value="medium" {% if
+                            current_user.font_size=='medium' %}checked{% endif %}>
+                        <label for="font-medium">Medium</label>
+
+                        <input type="radio" id="font-large" name="font_size" value="large" {% if
+                            current_user.font_size=='large' %}checked{% endif %}>
+                        <label for="font-large">Large</label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="update_appearance" class="submit-btn">Save Appearance</button>
+                </div>
+            </form>
+            {% endif %}
+
+            <!-- Danger Zone -->
+            <div class="danger-zone">
+                <h2>Delete Account</h2>
+                <p>Deleting your account is permanent and cannot be undone. All your data, including chat history and
+                    profile information, will be permanently removed.</p>
+                <form id="deleteAccountForm" method="POST" action="{{ url_for('delete_account') }}">
+                    {% if not current_user.is_oauth_user %}
+                    <div class="form-group">
+                        <label for="password_confirm">To confirm, please enter your password</label>
+                        <input type="password" id="password_confirm" name="password" placeholder="Enter your password"
+                            required>
+                    </div>
+                    {% else %}
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                        <input type="checkbox" id="oauth_confirm" name="oauth_confirm" required
+                            style="width: auto; margin: 0;">
+                        <label for="oauth_confirm" style="margin: 0; color: var(--danger);">I confirm that I want to
+                            delete my account and lose all my data.</label>
+                    </div>
+                    {% endif %}
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn danger-btn">Delete My Account Permanently</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inline script to apply theme instantly and prevent flickering
+        (function () {
+            try {
+                const theme = localStorage.getItem('theme');
+                if (theme) {
+                    document.body.dataset.theme = theme;
+                    document.body.classList.toggle('light', theme === 'light');
+                }
+            } catch (e) { console.error(e); }
+        })();
+
+        // The rest of the page-specific script
+        const avatarInput = document.getElementById('avatar');
+        const avatarPreview = document.getElementById('avatarPreview');
+        const deleteForm = document.getElementById('deleteAccountForm');
+
+        avatarInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+                if (file.size > MAX_SIZE) {
+                    alert('The selected file is too large. Please choose a file under 2MB.');
+                    // Clear the file input to prevent submitting the oversized file
+                    this.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    avatarPreview.style.backgroundImage = `url(${e.target.result})`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        deleteForm.addEventListener('submit', function (e) {
+            const confirmation = confirm('Are you absolutely sure you want to delete your account? This action is irreversible.');
+            if (!confirmation) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>

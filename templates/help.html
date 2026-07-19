@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" class="scrollable-page">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & Support - ConvAI</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='fevico.ico') }}" type="image/x-icon">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="scrollable-page simple-page page-help">
+    <div class="container">
+        <div class="page-header">
+            <a href="{{ url_for('index') }}" class="back-link">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Chat
+            </a>
+        </div>
+        <h1>Help & Support</h1>
+
+        <div class="search-bar">
+            <svg viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+            </svg>
+            <input type="search" id="faqSearch" placeholder="Search questions...">
+        </div>
+
+        <div class="help-content">
+            <div id="noResults" style="display: none; text-align: center; padding: 20px; color: var(--ink-400);">
+                <p>No questions found matching your search.</p>
+            </div>
+            <details class="faq-item" data-searchable>
+                <summary>
+                    <h2>How do I change my password?</h2>
+                    <svg class="faq-chevron" viewBox="0 0 24 24">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </summary>
+                <div class="faq-answer">
+                    <p>You can change your password from the <a href="{{ url_for('profile') }}">My Profile</a> page. If
+                        you signed up using Google, your password is managed by Google and cannot be changed here.</p>
+                </div>
+            </details>
+            <details class="faq-item" data-searchable>
+                <summary>
+                    <h2>How do I upgrade to Premium?</h2>
+                    <svg class="faq-chevron" viewBox="0 0 24 24">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </summary>
+                <div class="faq-answer">
+                    <p>Visit the <a href="{{ url_for('plans_page') }}">Plans</a> page to see our available subscriptions
+                        and unlock premium features like advanced AI models and appearance customization.</p>
+                </div>
+            </details>
+            <details class="faq-item" data-searchable>
+                <summary>
+                    <h2>How do I delete my account?</h2>
+                    <svg class="faq-chevron" viewBox="0 0 24 24">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </summary>
+                <div class="faq-answer">
+                    <p>You can permanently delete your account and all associated data from the "Danger Zone" at the
+                        bottom of the <a href="{{ url_for('profile') }}">My Profile</a> page.</p>
+                </div>
+            </details>
+            <details class="faq-item" data-searchable>
+                <summary>
+                    <h2>Contact Support</h2>
+                    <svg class="faq-chevron" viewBox="0 0 24 24">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </summary>
+                <div class="faq-answer">
+                    <p>If you need further assistance, please don't hesitate to contact our support team at <a
+                            href="mailto:joshichaitanya58@gmail.com">joshichaitanya58@gmail.com</a>.</p>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        // Inline script to apply theme instantly and prevent flickering
+        (function () {
+            try {
+                const theme = localStorage.getItem('theme');
+                if (theme) {
+                    document.body.dataset.theme = theme;
+                    if (theme === 'light') {
+                        document.body.classList.add('light');
+                    }
+                }
+            } catch (e) { console.error(e); }
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('faqSearch');
+            const faqItems = document.querySelectorAll('.faq-item[data-searchable]');
+            const noResultsMessage = document.getElementById('noResults');
+
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                let visibleCount = 0;
+
+                faqItems.forEach(item => {
+                    const question = item.querySelector('h2').textContent.toLowerCase();
+                    const answer = item.querySelector('.faq-answer p').textContent.toLowerCase();
+                    const isVisible = question.includes(searchTerm) || answer.includes(searchTerm);
+
+                    item.style.display = isVisible ? 'block' : 'none';
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                noResultsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+
+</html>

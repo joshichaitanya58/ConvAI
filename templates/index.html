@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConvAI — AI Chat</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='fevico.ico') }}" type="image/x-icon">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body data-theme="{{ current_user.theme|default('dark') }}"
+  data-font-size="{{ current_user.font_size|default('medium') }}"
+  data-user-initials="{{ current_user.username[0:2]|upper }}">
+
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <span class="brand-mark">C</span>
+          <span class="brand-name">ConvAI</span>
+        </div>
+        <button class="icon-btn" id="collapseBtn" title="Toggle sidebar">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      <button class="new-chat-btn" id="newChatBtn">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        <span>New Chat</span>
+      </button>
+
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" />
+        </svg>
+        <input type="text" placeholder="Search chats..." id="searchInput">
+      </div>
+
+      <nav class="chat-list" id="chatList">
+        <!-- Chat history will be loaded here dynamically from the database -->
+        <p class="list-label" style="text-align: center; padding: 20px 0; color: var(--ink-400);">Loading chats...</p>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="profile-menu" id="profileMenu">
+          <button class="profile-btn" id="profileBtn">
+            {% if current_user.is_authenticated and current_user.avatar_url %}
+            <img src="{{ current_user.avatar_url }}" alt="Avatar" class="avatar-img">
+            {% else %}
+            <span class="avatar">{{ current_user.username[0:2]|upper if current_user.is_authenticated else 'G' }}</span>
+            {% endif %}
+            <span class="profile-info">
+              {% if current_user.is_authenticated %}
+              <span class="profile-name">{{ current_user.username }}</span>
+              <span class="profile-plan">{{ 'Premium Plan' if current_user.is_premium else 'Free Plan' }}</span>
+              {% else %}
+              <span class="profile-name">Guest</span>
+              <span class="profile-plan">Login to save chats</span>
+              {% endif %}
+            </span>
+            <svg class="chev" viewBox="0 0 24 24">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          <div class="profile-popup" id="profilePopup">
+            <a href="{{ url_for('profile') }}" class="popup-item">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              <span>My Profile</span>
+            </a>
+            <a href="#" class="popup-item" id="settingsBtn">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12.22 2h-0.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 010 2l-.15.08a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.38a2 2 0 00-.73-2.73l-.15-.08a2 2 0 010-2l.15-.08a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Settings</span>
+            </a>
+            <a href="{{ url_for('help_page') }}" class="popup-item">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>Help & Support</span>
+            </a>
+            <a href="{{ url_for('plans_page') }}" class="popup-item popup-item-pro">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              <span>Upgrade to Premium</span>
+            </a>
+            <div class="popup-divider"></div>
+            <a href="{{ url_for('logout') }}" class="popup-item">
+              <svg viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Logout</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <header class="topbar">
+        <button class="icon-btn mobile-only" id="mobileMenuBtn">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <!-- This is now a self-contained, styled select dropdown -->
+        <div class="model-switcher" id="modelSwitcher">
+          <span class="model-dot"></span>
+          <span class="model-label" id="modelLabel">Compound Mini</span>
+          <select id="topbarModelSelect" aria-label="Select chat model">
+            <optgroup label="Free Models">
+              <option value="groq/compound-mini" selected>Compound Mini</option>
+              <option value="groq/compound">Compound</option>
+            </optgroup>
+            <optgroup label="Premium Models">
+              <option value="gemini/gemini-1.5-pro-latest" {% if not current_user.is_premium %}disabled{% endif %}>
+                ✨ Gemini 1.5 Pro
+              </option>
+              <option value="gemini/gemini-1.5-flash-latest" {% if not current_user.is_premium %}disabled{% endif %}>
+                ⚡ Gemini 1.5 Flash
+              </option>
+              <option value="openrouter/nvidia/nemotron-3-ultra-550b-a55b" {% if not current_user.is_premium
+                %}disabled{% endif %}>
+                🤖 Nemotron-3 Ultra
+              </option>
+              <option value="openrouter/openai/gpt-oss-20b" {% if not current_user.is_premium %}disabled{% endif %}>
+                🤖 GPT-OSS
+              </option>
+              <option value="openrouter/google/gemma-4-31b-it" {% if not current_user.is_premium %}disabled{% endif %}>
+                🤖 Gemma-4 31B
+              </option>
+              <option value="openrouter/poolside/laguna-xs-2.1" {% if not current_user.is_premium %}disabled{% endif %}>
+                🤖 Laguna XS 2.1
+              </option>
+            </optgroup>
+          </select>
+          <svg viewBox="0 0 24 24">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+        <button class="icon-btn" id="shareBtn" title="Share this chat" style="display: none;">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+        </button>
+        <button class="icon-btn" id="themeToggle" title="Toggle theme">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3a6 6 0 109 9 9 9 0 11-9-9z" />
+          </svg>
+        </button>
+      </header>
+
+      <section class="chat-area" id="chatArea">
+
+        <!-- Empty / welcome state -->
+        <div class="welcome" id="welcomeScreen">
+          <div class="welcome-mark">C</div>
+          <h1>How can I help you today?</h1>
+          <p class="welcome-sub">Write, brainstorm, or just ask — I'm here to help.</p>
+
+          <div class="suggestion-grid">
+            <button class="suggestion-card">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.2L12 16.4 5.7 20.8 8 13.6 2 9.2h7.6z" />
+              </svg>
+              <span class="s-title">Generate ideas</span>
+              <span class="s-sub">for 5 new business names</span>
+            </button>
+            <button class="suggestion-card">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 19V5a2 2 0 012-2h12a2 2 0 012 2v14l-8-4-8 4z" />
+              </svg>
+              <span class="s-title">Explain a document</span>
+              <span class="s-sub">by uploading a PDF for a summary</span>
+            </button>
+            <button class="suggestion-card">
+              <svg viewBox="0 0 24 24">
+                <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
+              </svg>
+              <span class="s-title">Write code</span>
+              <span class="s-sub">to create a Flask app boilerplate</span>
+            </button>
+            <button class="suggestion-card">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+              </svg>
+              <span class="s-title">Draft an email</span>
+              <span class="s-sub">to follow up with a client</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages thread (hidden by default, shown via JS demo) -->
+        <div class="thread" id="thread"></div>
+
+      </section>
+
+      <!-- Composer -->
+      <div class="composer-wrap">
+        <div id="uploadProgress" class="upload-progress" style="display: none;">
+          <div class="upload-progress-bar"></div>
+        </div>
+
+        <div id="attachmentPreview" class="attachment-preview" style="display: none;">
+          <!-- Attachment preview will be rendered here by JS -->
+        </div>
+
+        <form class="composer" id="composerForm">
+          <button type="button" class="composer-icon-btn" id="attachBtn" title="Attach file">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M21.4 11.6L12.6 20.4a4.5 4.5 0 01-6.4-6.4l8.8-8.8a3 3 0 014.2 4.2l-8.8 8.8a1.5 1.5 0 01-2.2-2.2l8-8" />
+            </svg>
+          </button>
+          <!-- Hidden file input, triggered by the button -->
+          <input type="file" id="fileInput" style="display: none;"
+            accept=".pdf,.docx,.xlsx,.pptx,.csv,.txt,.md,.jpg,.jpeg,.png,.mp3,.mp4">
+
+          <textarea id="messageInput" rows="1" placeholder="Message ConvAI..."></textarea>
+
+          <button type="button" class="composer-icon-btn" id="micBtn" title="Use voice">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+              <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4" />
+            </svg>
+          </button>
+
+          <button type="submit" class="send-btn" id="sendBtn" disabled>
+            <svg viewBox="0 0 24 24">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </button>
+
+        </form>
+        <p class="composer-hint">ConvAI may make mistakes. Consider checking important information.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Drag and Drop Overlay -->
+  <div class="drag-overlay" id="dragOverlay">
+    <div class="drag-overlay-content">
+      <svg viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+      </svg>
+      <span>Drop your file here</span>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModalOverlay" style="display: none;">
+    <div class="modal-content" id="settingsModalContent">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="icon-btn" id="closeSettingsBtn">
+          <svg viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Theme Selector -->
+        <div class="setting-group">
+          <label>Theme</label>
+          <div class="theme-selector">
+            <button class="theme-option" data-theme="dark">
+              <div class="theme-preview dark"></div>
+              <span>Dark</span>
+            </button>
+            <button class="theme-option" data-theme="light">
+              <div class="theme-preview light"></div>
+              <span>Light</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Font Size Selector (Premium Only) -->
+        {% if current_user.is_premium %}
+        <div class="setting-group">
+          <label>Chat Font Size</label>
+          <div class="font-size-selector">
+            <input type="radio" id="modal-font-small" name="modal_font_size" value="small" {% if
+              current_user.font_size=='small' %}checked{% endif %}>
+            <label for="modal-font-small">Small</label>
+
+            <input type="radio" id="modal-font-medium" name="modal_font_size" value="medium" {% if
+              current_user.font_size=='medium' %}checked{% endif %}>
+            <label for="modal-font-medium">Medium</label>
+
+            <input type="radio" id="modal-font-large" name="modal_font_size" value="large" {% if
+              current_user.font_size=='large' %}checked{% endif %}>
+            <label for="modal-font-large">Large</label>
+          </div>
+        </div>
+        {% else %}
+        <div class="setting-group premium-upsell">
+          <label>Chat Font Size</label>
+          <p>
+            Customize the text size in your conversations.
+            <a href="{{ url_for('plans_page') }}">Upgrade to Premium</a> to unlock this feature.
+          </p>
+        </div>
+        {% endif %}
+
+        <div class="setting-group">
+          <label>Clear Chat History</label>
+          <p class="setting-description">Permanently delete all your conversations. This action cannot be undone.</p>
+          <button class="danger-btn" id="clearHistoryBtn">Clear All Chats</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="{{ url_for('profile') }}" class="link-btn">
+          Go to Full Profile Settings
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Inline script to apply theme instantly and prevent flickering
+    (function () {
+      try {
+        const theme = localStorage.getItem('theme');
+        if (theme) {
+          document.body.dataset.theme = theme;
+          if (theme === 'light') {
+            document.body.classList.add('light');
+          }
+        }
+      } catch (e) { console.error(e); }
+    })();
+
+    // Unregister any existing service workers to prevent console errors
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>

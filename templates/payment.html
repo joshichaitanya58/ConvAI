@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="scrollable-page">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - ConvAI</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='fevico.ico') }}" type="image/x-icon">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body data-theme="{{ current_user.theme|default('dark') }}" class="scrollable-page simple-page page-payment">
+    <div class="container">
+        <div class="page-header">
+            <a href="{{ url_for('plans_page') }}" class="back-link">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Plans
+            </a>
+        </div>
+        <h1>Complete Your Purchase</h1>
+
+        <form class="payment-form" method="POST" action="{{ url_for('payment_success') }}">
+            <div class="order-summary">
+                <h2>Order Summary</h2>
+                <div class="order-item">
+                    <span>{{ plan.name }}</span>
+                    <strong>{{ plan.price }}</strong>
+                </div>
+            </div>
+            <input type="hidden" name="plan_type" value="{{ plan_key }}">
+            <input type="hidden" name="payment_method" id="payment-method-input" value="card">
+
+            <!-- Payment Method Tabs -->
+            <div class="payment-options">
+                <button type="button" class="payment-option-btn active" data-target="card-fields">Card</button>
+                <button type="button" class="payment-option-btn" data-target="upi-fields">UPI</button>
+                <button type="button" class="payment-option-btn" data-target="netbanking-fields">Netbanking</button>
+            </div>
+
+            <!-- Card Fields -->
+            <div id="card-fields" class="payment-method-fields active">
+                <div class="form-group">
+                    <label for="card-number">Card Number</label>
+                    <input type="text" id="card-number" name="card-number" placeholder="0000 0000 0000 0000">
+                </div>
+                <div class="form-group">
+                    <label for="card-name">Name on Card</label>
+                    <input type="text" id="card-name" name="card-name" placeholder="Your Name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expiry-date">Expiry Date</label>
+                        <input type="text" id="expiry-date" name="expiry-date" placeholder="MM / YY">
+                    </div>
+                    <div class="form-group">
+                        <label for="cvc">CVC</label>
+                        <input type="text" id="cvc" name="cvc" placeholder="123">
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPI Fields -->
+            <div id="upi-fields" class="payment-method-fields">
+                <div class="form-group">
+                    <label for="upi-id">Merchant UPI ID</label>
+                    <input type="text" id="upi-id" name="upi-id" value="{{ upi_id }}" readonly>
+                </div>
+                <p style="text-align: center; color: var(--parchment-dim); font-size: 13px;">Or scan the QR code in your
+                    UPI app.</p>
+                <div
+                    style="background: #fff; padding: 10px; border-radius: 10px; margin: 16px auto; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center;">
+                    <img src="{{ qr_code_url }}" alt="UPI QR Code" style="width: 150px; height: 150px; display: block;">
+                </div>
+            </div>
+
+            <!-- Netbanking Fields -->
+            <div id="netbanking-fields" class="payment-method-fields">
+                <div class="form-group">
+                    <label for="bank-select">Select Your Bank</label>
+                    <select id="bank-select" name="bank"
+                        style="width:100%; padding:11px 14px; border-radius:10px; border:1px solid var(--ink-700); background:var(--ink-850); color:var(--parchment); font-size:14px;">
+                        <option>State Bank of India</option>
+                        <option>HDFC Bank</option>
+                        <option>ICICI Bank</option>
+                        <option>Axis Bank</option>
+                        <option>Kotak Mahindra Bank</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">Pay {{ plan.price }} and Activate</button>
+            </div>
+
+            <div class="secure-badge">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                This is a mock payment form for demonstration.
+            </div>
+        </form>
+    </div>
+    <script>
+        // Inline script to apply theme instantly and prevent flickering
+        (function () {
+            try {
+                const theme = localStorage.getItem('theme');
+                if (theme) {
+                    document.body.dataset.theme = theme;
+                    document.body.classList.toggle('light', theme === 'light');
+                }
+            } catch (e) { console.error(e); }
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Payment method tabs logic
+            const optionBtns = document.querySelectorAll('.payment-option-btn');
+            const fieldContainers = document.querySelectorAll('.payment-method-fields');
+            const paymentMethodInput = document.getElementById('payment-method-input');
+
+            optionBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Deactivate all
+                    optionBtns.forEach(b => b.classList.remove('active'));
+                    fieldContainers.forEach(c => c.classList.remove('active'));
+
+                    // Activate clicked button and its corresponding fields
+                    btn.classList.add('active');
+                    const targetId = btn.dataset.target;
+                    const targetContainer = document.getElementById(targetId);
+                    if (targetContainer) {
+                        targetContainer.classList.add('active');
+                    }
+
+                    // Update payment method hidden input
+                    const method = targetId.replace('-fields', ''); // 'card', 'upi', 'netbanking'
+                    paymentMethodInput.value = method;
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

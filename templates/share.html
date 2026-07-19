@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ chat.title if chat else 'Shared Chat' }} — ConvAI</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='fevico.ico') }}" type="image/x-icon">
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body class="page-share">
+    <div class="share-container">
+        {% if error %}
+        <div class="error-container">
+            <h1>Oops!</h1>
+            <p>{{ error }}</p>
+            <a href="{{ url_for('index') }}">Go to ConvAI</a>
+        </div>
+        {% else %}
+        <header class="share-header">
+            <div>
+                <h1>{{ chat.title }}</h1>
+                <p class="share-meta">A conversation shared by {{ owner_username }}</p>
+            </div>
+            <a href="{{ url_for('index') }}" class="share-brand">
+                <span class="brand-mark">C</span>
+                <span class="brand-name">ConvAI</span>
+            </a>
+        </header>
+
+        <div class="thread">
+            {% for message in chat.messages %}
+            {% if message.role != 'system' %}
+            <div class="msg {{ 'bot' if message.role == 'assistant' else 'user' }}">
+                <div class="msg-avatar">
+                    {{ 'C' if message.role == 'assistant' else (owner_username[0]|upper if owner_username else '?') }}
+                </div>
+                <div class="msg-body">
+                    <div class="msg-name">
+                        {{ 'ConvAI' if message.role == 'assistant' else owner_username }}
+                    </div>
+                    <!-- Content is auto-escaped here on purpose; JS below safely
+                                 decodes + renders markdown via marked + DOMPurify -->
+                    <div class="msg-text" data-raw="{{ message.content }}">
+                        {{ message.content }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.msg.bot .msg-text').forEach(el => {
+                // textContent reads the browser-decoded text (entities like &lt; are
+                // turned back into < ), so this is the real, original markdown source.
+                const rawMarkdown = el.textContent || el.innerText;
+                el.innerHTML = DOMPurify.sanitize(marked.parse(rawMarkdown));
+            });
+
+            // Auto-scroll the thread to the latest message on load
+            const thread = document.querySelector('.thread');
+            if (thread) {
+                thread.scrollTop = thread.scrollHeight;
+            }
+        });
+    </script>
+</body>
+
+</html>
