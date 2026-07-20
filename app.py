@@ -981,6 +981,15 @@ def delete_account():
     flash('Your account has been permanently deleted.', 'success')
     return redirect(url_for('login'))
 
+@app.route('/.well-known/appspecific/com.chrome.devtools.json')
+def chrome_devtools_config():
+    """
+    Handles a request from Chrome DevTools to prevent 404 errors in logs.
+    This is for debugging purposes and is not essential for the app to run.
+    """
+    return jsonify({})
+
+
 def resolve_model_name(requested_model):
     """Map friendly UI model names to the actual model ID expected by Groq."""
     requested_model = (requested_model or '').strip()

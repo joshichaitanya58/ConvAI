@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1116">
   <title>ConvAI — AI Chat</title>
   <link rel="shortcut icon" href="{{ url_for('static', filename='fevico.ico') }}" type="image/x-icon">
 
@@ -117,6 +118,10 @@
         </div>
       </div>
     </aside>
+
+    <!-- Backdrop for mobile sidebar drawer (was missing — CSS existed but no element in DOM,
+         so tapping outside the drawer never closed it and there was no dim overlay). -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <!-- MAIN -->
     <main class="main">

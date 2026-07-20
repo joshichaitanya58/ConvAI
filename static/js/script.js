@@ -1,8 +1,35 @@
+// ---------- mobile viewport height fix ----------
+// Many mobile browsers (in-app browsers, some Android WebViews/Silk, older
+// Safari) compute 100vh/100dvh unreliably — the address bar height gets
+// included/excluded inconsistently, which is a very common cause of a
+// squished or blank-looking layout on phones. We measure the *real*
+// available height in JS and expose it as --vh, then use it as a fallback
+// in CSS (calc(var(--vh, 1vh) * 100)) alongside 100dvh.
+function setViewportHeight() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+setViewportHeight();
+window.addEventListener('resize', setViewportHeight);
+window.addEventListener('orientationchange', setViewportHeight);
+
+// Keep the composer visible above the on-screen keyboard on mobile browsers
+// that support the visualViewport API (iOS Safari, Chrome Android).
+if (window.visualViewport) {
+    const syncKeyboardInset = () => {
+        const inset = Math.max(0, window.innerHeight - window.visualViewport.height);
+        document.documentElement.style.setProperty('--keyboard-inset', `${inset}px`);
+    };
+    window.visualViewport.addEventListener('resize', syncKeyboardInset);
+    window.visualViewport.addEventListener('scroll', syncKeyboardInset);
+}
+
 // ---------- element refs ----------
 const app = document.querySelector('.app');
 const sidebar = document.getElementById('sidebar');
 const collapseBtn = document.getElementById('collapseBtn');
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 const newChatBtn = document.getElementById('newChatBtn');
 const chatList = document.getElementById('chatList');
 const chatArea = document.getElementById('chatArea');
@@ -97,6 +124,18 @@ collapseBtn.addEventListener('click', () => {
     }
 });
 mobileMenuBtn.addEventListener('click', () => app.classList.toggle('sidebar-open'));
+
+// Tap outside the drawer (on the dim backdrop) to close it on mobile.
+if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', () => app.classList.remove('sidebar-open'));
+}
+
+// Close the drawer with Escape too (nice on tablets with keyboards).
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && app.classList.contains('sidebar-open')) {
+        app.classList.remove('sidebar-open');
+    }
+});
 
 // ---------- theme toggle ----------
 themeToggle.addEventListener('click', async () => {
@@ -454,26 +493,26 @@ thread.addEventListener('click', (e) => {
 
 
 async function loadChat(item, chatId) {
-     // Prevent re-loading the same chat
-     if (chatId === currentChatId) return;
+    // Prevent re-loading the same chat
+    if (chatId === currentChatId) return;
 
-     document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-     item.classList.add('active');
-     currentChatId = chatId;
- 
-     shareBtn.style.display = 'flex'; // Show the share button
-     welcomeScreen.style.display = 'none';
-     thread.innerHTML = '<div class="msg bot"><div class="msg-body"><div class="typing"><span></span><span></span><span></span></div></div></div>';
-     thread.style.display = 'flex';
- 
-     const messages = await fetchChatMessages(currentChatId);
-     thread.innerHTML = ''; // Clear loading indicator
-     messages.forEach(msg => {
-         // The API returns 'assistant' but our function uses 'bot'
-         appendMessage(msg.role === 'assistant' ? 'bot' : 'user', msg.content);
-     });
- 
-     if (window.innerWidth <= 860) app.classList.remove('sidebar-open');
+    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    currentChatId = chatId;
+
+    shareBtn.style.display = 'flex'; // Show the share button
+    welcomeScreen.style.display = 'none';
+    thread.innerHTML = '<div class="msg bot"><div class="msg-body"><div class="typing"><span></span><span></span><span></span></div></div></div>';
+    thread.style.display = 'flex';
+
+    const messages = await fetchChatMessages(currentChatId);
+    thread.innerHTML = ''; // Clear loading indicator
+    messages.forEach(msg => {
+        // The API returns 'assistant' but our function uses 'bot'
+        appendMessage(msg.role === 'assistant' ? 'bot' : 'user', msg.content);
+    });
+
+    if (window.innerWidth <= 860) app.classList.remove('sidebar-open');
 }
 
 shareBtn.addEventListener('click', async () => {
@@ -482,20 +521,39 @@ shareBtn.addEventListener('click', async () => {
         return;
     }
 
+    // Show a temporary loading state on the button
+    shareBtn.disabled = true;
+
     try {
         const response = await fetch(`/api/chat/${currentChatId}/share`, { method: 'POST' });
         if (!response.ok) throw new Error('Failed to create share link.');
 
         const data = await response.json();
-        if (data.success && data.share_url) {
-            await navigator.clipboard.writeText(data.share_url);
-            showToast("Share link copied to clipboard!");
+        if (!data.success || !data.share_url) {
+            throw new Error(data.error || 'Unknown error creating share link');
+        }
+
+        const shareUrl = data.share_url;
+        const activeChatItem = document.querySelector('.chat-item.active .chat-title');
+        const chatTitle = activeChatItem ? activeChatItem.textContent : 'ConvAI Conversation';
+
+        // Use Web Share API if available (for mobile)
+        if (navigator.share) {
+            await navigator.share({
+                title: chatTitle,
+                text: 'Check out this conversation from ConvAI:',
+                url: shareUrl,
+            });
         } else {
-            throw new Error(data.error || 'Unknown error');
+            // Fallback for desktop: copy to clipboard
+            await navigator.clipboard.writeText(shareUrl);
+            showToast("Share link copied to clipboard!");
         }
     } catch (error) {
         console.error("Error sharing chat:", error);
-        showToast(`Error: ${error.message}`);
+        showToast(`Could not create share link: ${error.message}`, 'error');
+    } finally {
+        shareBtn.disabled = false; // Re-enable the button
     }
 });
 
@@ -584,7 +642,7 @@ async function handleRegenerate(button) {
 
     // Show typing indicator
     const typingEl = appendTyping();
-    thread.scrollTop = thread.scrollHeight;
+    chatArea.scrollTop = chatArea.scrollHeight;
 
     try {
         console.log(`Regenerating response with model: ${currentModel}`);
@@ -673,7 +731,7 @@ composerForm.addEventListener('submit', async (e) => {
     const isNewChat = !currentChatId;
 
     const typingEl = appendTyping();
-    thread.scrollTop = thread.scrollHeight;
+    chatArea.scrollTop = chatArea.scrollHeight;
 
     const formData = createFormData(text);
     const xhr = new XMLHttpRequest();
@@ -798,7 +856,7 @@ function appendMessage(role, text) {
     wrap.appendChild(avatar);
     wrap.appendChild(body);
     thread.appendChild(wrap);
-    thread.scrollTop = thread.scrollHeight; // Scroll to bottom
+    chatArea.scrollTop = chatArea.scrollHeight; // Scroll to bottom
     return wrap;
 }
 
@@ -814,7 +872,7 @@ function appendTyping() {
     </div>
   `;
     thread.appendChild(wrap);
-    thread.scrollTop = thread.scrollHeight; // Scroll to bottom
+    chatArea.scrollTop = chatArea.scrollHeight; // Scroll to bottom
     return wrap;
 }
 
@@ -938,4 +996,28 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
         });
     });
+
+    // --- Profile Page Form Loader ---
+    if (document.body.classList.contains('page-profile')) {
+        const profileForms = document.querySelectorAll('.profile-form form');
+        profileForms.forEach(form => {
+            form.addEventListener('submit', (e) => {
+                const submitBtn = form.querySelector('.submit-btn, .danger-btn');
+                if (!submitBtn) return;
+
+                // Special confirmation for the delete account form
+                if (submitBtn.classList.contains('danger-btn') && form.action.includes('/delete-account')) {
+                    if (!confirm('Are you sure you want to permanently delete your account? This will erase all your data and cannot be undone.')) {
+                        e.preventDefault(); // Stop the form submission if user cancels
+                        return;
+                    }
+                }
+
+                // If we reach here, either it's not the delete form or the user confirmed.
+                // Show the loader.
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+            });
+        });
+    }
 });

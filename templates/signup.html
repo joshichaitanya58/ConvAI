@@ -166,12 +166,21 @@
         // confirm password match check
         const form = document.getElementById('signupForm');
         const confirmInput = document.getElementById('confirm_password');
+        const submitBtn = form.querySelector('.auth-btn');
+
         form.addEventListener('submit', (e) => {
             if (pwInput.value !== confirmInput.value) {
                 e.preventDefault();
                 confirmInput.style.borderColor = '#e07a6b';
                 confirmInput.style.boxShadow = '0 0 0 3px rgba(224,122,107,.14)';
                 confirmInput.focus();
+                return; // Stop if passwords don't match
+            }
+
+            // If form is valid, show the loader
+            if (form.checkValidity()) {
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
             }
         });
         confirmInput.addEventListener('input', () => {

@@ -27,7 +27,7 @@
         </div>
         <h1>My Profile</h1>
 
-        <div class="profile-form">
+        <div class="profile-form" style="margin-top: 15px;">
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             <div class="flash-messages">
@@ -86,7 +86,7 @@
             {% if not current_user.is_oauth_user %}
             <form method="POST" action="{{ url_for('profile') }}" class="form-section">
                 <h2>Change Password</h2>
-                <div class="form-group">
+                <div class="form-group" style="margin-top:15px">
                     <label for="current_password">Current Password</label>
                     <input type="password" id="current_password" name="current_password"
                         placeholder="Enter your current password" required>
@@ -110,7 +110,7 @@
             <!-- Appearance Settings (Premium Only) -->
             {% if current_user.is_premium %}
             <form method="POST" action="{{ url_for('profile') }}" class="form-section appearance-form">
-                <h2>Appearance</h2>
+                <h2 style="margin-bottom: 15px;">Appearance</h2>
                 <div class="form-group">
                     <label>Chat Font Size</label>
                     <div class="font-size-selector">

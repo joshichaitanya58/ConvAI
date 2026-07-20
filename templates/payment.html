@@ -24,7 +24,7 @@
                 Back to Plans
             </a>
         </div>
-        <h1>Complete Your Purchase</h1>
+        <h1 style="margin-bottom: 15px;">Complete Your Purchase</h1>
 
         <form class="payment-form" method="POST" action="{{ url_for('payment_success') }}">
             <div class="order-summary">
@@ -143,6 +143,16 @@
                     const method = targetId.replace('-fields', ''); // 'card', 'upi', 'netbanking'
                     paymentMethodInput.value = method;
                 });
+            });
+
+            // Add loader to payment form submission
+            const paymentForm = document.querySelector('.payment-form');
+            paymentForm.addEventListener('submit', () => {
+                const submitBtn = paymentForm.querySelector('.submit-btn');
+                if (submitBtn) {
+                    submitBtn.classList.add('loading');
+                    submitBtn.disabled = true;
+                }
             });
         });
     </script>
