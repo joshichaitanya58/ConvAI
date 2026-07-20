@@ -586,7 +586,11 @@ textarea {
     flex-shrink: 0;
 }
 
-.topbar .icon-btn {
+/* BUGFIX: this used to be ".topbar .icon-btn" which also matched the
+   mobile hamburger button (#mobileMenuBtn also has class "icon-btn").
+   Two competing auto-margins on the same flex row squeezed the
+   model-switcher down to almost nothing on mobile, showing only its dot. */
+.topbar .icon-btn:not(.mobile-only) {
     margin-left: auto;
 }
 
@@ -1262,9 +1266,12 @@ body[data-font-size="large"] .msg-text {
         max-width: 95%;
     }
 
-    /* Model switcher - prevent overflow on small screens */
+    /* Model switcher - prevent overflow on small screens, but don't
+       let it collapse to nothing now that the icon-btn margin bug
+       (above) is fixed and it has real space to sit in. */
     .model-switcher {
-        min-width: 0;
+        flex: 1 1 auto;
+        min-width: 140px;
         max-width: 200px;
     }
 
